@@ -1,4 +1,4 @@
-use std::ops::{BitAnd, BitOr, Not};
+use std::{ops::{BitAnd, BitOr, Not}, fmt::Display};
 
 pub struct Circuit {
     inputs: Vec<Input>,
@@ -21,7 +21,7 @@ pub struct Component {
     function: Function,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum Function {
     And,
     Or,
@@ -115,6 +115,10 @@ impl Circuit {
     pub fn all_components(&self) -> &[Component] {
         &self.components
     }
+
+    pub fn all_values(&self) -> &[Value] {
+        &self.values
+    }
 }
 
 impl Component {
@@ -149,6 +153,20 @@ impl Function {
             Function::Not => 1,
         }
     }
+
+    pub fn input_value_count(&self) -> usize {
+        match self {
+            Function::And => 2,
+            Function::Or => 2,
+            Function::Not => 1,
+        }
+    }
+}
+
+impl Display for Function {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{self:?}")
+    }
 }
 
 impl BitAnd for Value {
@@ -181,6 +199,12 @@ impl Not for Value {
             Value::On => Value::Off,
             Value::Off => Value::On,
         }
+    }
+}
+
+impl Display for Value {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{self:?}")
     }
 }
 
