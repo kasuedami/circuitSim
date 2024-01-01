@@ -99,10 +99,9 @@ impl Circuit {
     }
 
     pub fn add_component(&mut self, function: Function, input_value_indices: Vec<usize>) -> (usize, Vec<usize>) {
-        // TODO: refactor this first part
-        (0..function.output_value_count()).for_each(|_| self.values.push(Value::Off));
-        let output_value_indices_range = (self.values.len() - (function.output_value_count()))..(self.values.len());
-        let output_value_indices: Vec<_> = output_value_indices_range.map(|i| i).collect();
+        let output_value_start_index = self.values.len();
+        let output_value_indices: Vec<_> = (output_value_start_index..output_value_start_index + function.output_value_count()).collect();
+        output_value_indices.iter().for_each(|_| self.values.push(Value::Off));
 
         let component = Component::new(function, input_value_indices, output_value_indices.clone());
         self.components.push(component);
