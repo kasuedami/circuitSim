@@ -1,11 +1,13 @@
 // TODO: remove this
 #![allow(dead_code)]
 
+use std::ops::{BitAnd, BitOr, Not};
+
 fn main() {
     println!("Hello, world!");
 }
 
-struct Simulator {
+struct Circuit {
     inputs: Vec<Input>,
     outputs: Vec<Output>,
     components: Vec<Component>,
@@ -22,7 +24,15 @@ struct Output {
 
 struct Component {
     input_value_indices: Vec<usize>,
-    output_value_indces: Vec<usize>,
+    output_value_indices: Vec<usize>,
+    function: Function,
+}
+
+#[derive(Clone, Copy)]
+enum Function {
+    And,
+    Or,
+    Not,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -47,7 +57,7 @@ enum ValueOutputIndex {
     Component(usize, usize),
 }
 
-impl Simulator {
+impl Circuit {
     pub fn new() -> Self {
         Self {
             inputs: Vec::new(),
@@ -87,14 +97,105 @@ impl Simulator {
         
         output_index
     }
+
+    pub fn add_component(&mut self, function: Function, input_value_indices: Vec<usize>) -> (usize, Vec<usize>) {
+        // TODO: refactor this first part
+        (0..function.output_value_count()).for_each(|_| self.values.push(Value::Off));
+        let output_value_indices_range = (self.values.len() - (function.output_value_count()))..(self.values.len());
+        let output_value_indices: Vec<_> = output_value_indices_range.map(|i| i).collect();
+
+        let component = Component::new(function, input_value_indices, output_value_indices.clone());
+        self.components.push(component);
+        let component_index = self.components.len() - 1;
+
+        (component_index, output_value_indices)
+    }
+
+    pub fn evaluate_component(&mut self, component_index: usize) -> Vec<usize> {
+        // TODO: fetch output values before, compare and only return indices of changed values
+        let component = &self.components[component_index];
+        let input_values: Vec<Value> = component.input_value_indices.iter().map(|&input_index| self.values[input_index]).collect();
+        let new_output_values = component.function.evaluate(input_values);
+
+        component.output_value_indices.iter().enumerate().for_each(|(i, &output_value_index)| self.values[output_value_index] = new_output_values[i]);
+
+        component.output_value_indices.clone()
+    }
+}
+
+impl Component {
+    pub fn new(function: Function, input_value_indices: Vec<usize>, output_value_indices: Vec<usize>) -> Self {
+        Self {
+            input_value_indices,
+            output_value_indices,
+            function
+        }
+    }
+}
+
+impl Function {
+    pub fn evaluate(&self, input_values: Vec<Value>) -> Vec<Value> {
+        match self {
+            Function::And => {
+                let value = input_values.iter().fold(Value::On, |acc, &x| acc & x);
+                vec![value]
+            },
+            Function::Or => {
+                let value = input_values.iter().fold(Value::Off, |acc, &x| acc | x);
+                vec![value]
+            },
+            Function::Not => vec![!input_values[0]],
+        }
+    }
+
+    pub fn output_value_count(&self) -> usize {
+        match self {
+            Function::And => 1,
+            Function::Or => 1,
+            Function::Not => 1,
+        }
+    }
+}
+
+impl BitAnd for Value {
+    type Output = Self;
+
+    fn bitand(self, rhs: Self) -> Self::Output {
+        match (self, rhs) {
+            (Value::On, Value::On) => Value::On,
+            _ => Value::Off
+        }
+    }
+}
+
+impl BitOr for Value {
+    type Output = Self;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        match (self, rhs) {
+            (Value::Off, Value::Off) => Value::Off,
+            _ => Value::On,
+        }
+    }
+}
+
+impl Not for Value {
+    type Output = Self;
+
+    fn not(self) -> Self::Output {
+        match self {
+            Value::On => Value::Off,
+            Value::Off => Value::On,
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     #[test]
-    fn basic() {
-        let mut sim = Simulator::new();
+    fn input_output_test() {
+        let mut sim = Circuit::new();
         let (input, value) = sim.add_input(Value::On);
         let output = sim.add_output(value);
 
@@ -105,5 +206,83 @@ mod tests {
 
         assert_eq!(sim.get_input(input), Value::Off);
         assert_eq!(sim.get_output(output), Value::Off);
+    }
+
+    #[test]
+    fn and_test() {
+        let mut sim = Circuit::new();
+        let (input0, value0) = sim.add_input(Value::On);
+        let (input1, value1) = sim.add_input(Value::On);
+
+        let (component, values) = sim.add_component(Function::And, vec![value0, value1]);
+
+        let output = sim.add_output(values[0]);
+
+        assert_eq!(sim.get_output(output), Value::Off);
+
+        assert_eq!(sim.evaluate_component(component).len(), 1);
+        assert_eq!(sim.get_output(output), Value::On);
+
+        sim.set_input(input0, Value::Off);
+        assert_eq!(sim.evaluate_component(component).len(), 1);
+        assert_eq!(sim.get_output(output), Value::Off);
+
+        sim.set_input(input1, Value::Off);
+        assert_eq!(sim.evaluate_component(component).len(), 1); // TODO: this should be 0 after reworking evaluate_component
+        assert_eq!(sim.get_output(output), Value::Off);
+
+        sim.set_input(input0, Value::On);
+        assert_eq!(sim.evaluate_component(component).len(), 1); // TODO: this should be 0 after reworking evaluate_component
+        assert_eq!(sim.get_output(output), Value::Off);
+    }
+
+    #[test]
+    fn or_test() {
+        let mut sim = Circuit::new();
+        let (input0, value0) = sim.add_input(Value::On);
+        let (input1, value1) = sim.add_input(Value::On);
+
+        let (component, values) = sim.add_component(Function::Or, vec![value0, value1]);
+
+        let output = sim.add_output(values[0]);
+
+        assert_eq!(sim.get_output(output), Value::Off);
+
+        assert_eq!(sim.evaluate_component(component).len(), 1);
+        assert_eq!(sim.get_output(output), Value::On);
+
+        sim.set_input(input0, Value::Off);
+        assert_eq!(sim.evaluate_component(component).len(), 1); // TODO: this should be 0 after reworking evaluate_component
+        assert_eq!(sim.get_output(output), Value::On);
+
+        sim.set_input(input1, Value::Off);
+        assert_eq!(sim.evaluate_component(component).len(), 1);
+        assert_eq!(sim.get_output(output), Value::Off);
+
+        sim.set_input(input0, Value::On);
+        assert_eq!(sim.evaluate_component(component).len(), 1);
+        assert_eq!(sim.get_output(output), Value::On);
+    }
+
+    #[test]
+    fn not_test() {
+        let mut sim = Circuit::new();
+        let (input, value) = sim.add_input(Value::On);
+
+        let (component, values) = sim.add_component(Function::Not, vec![value]);
+
+        let output = sim.add_output(values[0]);
+
+        assert_eq!(sim.get_output(output), Value::Off);
+
+        assert_eq!(sim.get_output(output), Value::Off);
+
+        assert_eq!(sim.evaluate_component(component).len(), 1);
+        assert_eq!(sim.get_output(output), Value::Off);
+
+        sim.set_input(input, Value::Off);
+
+        assert_eq!(sim.evaluate_component(component).len(), 1);
+        assert_eq!(sim.get_output(output), Value::On);
     }
 }
