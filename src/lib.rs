@@ -7,15 +7,15 @@ pub struct Circuit {
     values: Vec<Value>,
 }
 
-struct Input {
+pub struct Input {
     value_index: usize,
 }
 
-struct Output {
+pub struct Output {
     value_index: usize,
 }
 
-struct Component {
+pub struct Component {
     input_value_indices: Vec<usize>,
     output_value_indices: Vec<usize>,
     function: Function,
@@ -102,6 +102,18 @@ impl Circuit {
         value_changes.clone().for_each(|(output_index, &value)| self.values[output_index] = value);
         
         value_changes.map(|(output_index, _)| output_index).collect()
+    }
+
+    pub fn all_inputs(&self) -> &[Input] {
+        &self.inputs
+    }
+
+    pub fn all_outputs(&self) -> &[Output] {
+        &self.outputs
+    }
+
+    pub fn all_components(&self) -> &[Component] {
+        &self.components
     }
 }
 
