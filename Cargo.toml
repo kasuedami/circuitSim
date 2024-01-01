@@ -14,3 +14,4 @@ name = "simulator_cli"
 path = "src/main.rs"
 
 [dependencies]
+inquire = "0.6.2"
