@@ -111,14 +111,20 @@ impl Circuit {
     }
 
     pub fn evaluate_component(&mut self, component_index: usize) -> Vec<usize> {
-        // TODO: fetch output values before, compare and only return indices of changed values
         let component = &self.components[component_index];
-        let input_values: Vec<Value> = component.input_value_indices.iter().map(|&input_index| self.values[input_index]).collect();
-        let new_output_values = component.function.evaluate(input_values);
+        let input_values: Vec<_> = component.input_value_indices.iter().map(|&input_index| self.values[input_index]).collect();
+        let befor_output_values: Vec<_> = component.output_value_indices.iter().map(|&output_index| self.values[output_index]).collect();
 
-        component.output_value_indices.iter().enumerate().for_each(|(i, &output_value_index)| self.values[output_value_index] = new_output_values[i]);
+        let after_output_values = component.function.evaluate(input_values);
+        let value_changes = befor_output_values.iter().zip(after_output_values.iter())
+            .enumerate()
+            .filter(|(_, (before, after))| before != after).map(|(i, (_, after))| (i, after))
+            .map(|(component_output_index, value)| (component.output_value_indices[component_output_index], value));
+        
 
-        component.output_value_indices.clone()
+        value_changes.clone().for_each(|(output_index, &value)| self.values[output_index] = value);
+        
+        value_changes.map(|(output_index, _)| output_index).collect()
     }
 }
 
@@ -227,11 +233,11 @@ mod tests {
         assert_eq!(sim.get_output(output), Value::Off);
 
         sim.set_input(input1, Value::Off);
-        assert_eq!(sim.evaluate_component(component).len(), 1); // TODO: this should be 0 after reworking evaluate_component
+        assert_eq!(sim.evaluate_component(component).len(), 0);
         assert_eq!(sim.get_output(output), Value::Off);
 
         sim.set_input(input0, Value::On);
-        assert_eq!(sim.evaluate_component(component).len(), 1); // TODO: this should be 0 after reworking evaluate_component
+        assert_eq!(sim.evaluate_component(component).len(), 0);
         assert_eq!(sim.get_output(output), Value::Off);
     }
 
@@ -251,7 +257,7 @@ mod tests {
         assert_eq!(sim.get_output(output), Value::On);
 
         sim.set_input(input0, Value::Off);
-        assert_eq!(sim.evaluate_component(component).len(), 1); // TODO: this should be 0 after reworking evaluate_component
+        assert_eq!(sim.evaluate_component(component).len(), 0);
         assert_eq!(sim.get_output(output), Value::On);
 
         sim.set_input(input1, Value::Off);
@@ -274,9 +280,7 @@ mod tests {
 
         assert_eq!(sim.get_output(output), Value::Off);
 
-        assert_eq!(sim.get_output(output), Value::Off);
-
-        assert_eq!(sim.evaluate_component(component).len(), 1);
+        assert_eq!(sim.evaluate_component(component).len(), 0);
         assert_eq!(sim.get_output(output), Value::Off);
 
         sim.set_input(input, Value::Off);
