@@ -5,4 +5,12 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[lib]
+name = "simulator"
+path = "src/lib.rs"
+
+[[bin]]
+name = "simulator_cli"
+path = "src/main.rs"
+
 [dependencies]
