@@ -7,14 +7,17 @@ pub struct Circuit {
     values: Vec<Value>,
 }
 
+#[derive(Debug)]
 pub struct Input {
     value_index: usize,
 }
 
+#[derive(Debug)]
 pub struct Output {
     value_index: usize,
 }
 
+#[derive(Debug)]
 pub struct Component {
     input_value_indices: Vec<usize>,
     output_value_indices: Vec<usize>,
