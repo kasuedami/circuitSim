@@ -1,7 +1,7 @@
 use std::process::exit;
 
 use inquire::{Select, MultiSelect};
-use simulator::{Circuit, Function, Value};
+use simulator::{Function, Value, Simulator};
 
 const INPUT: &str = "Input";
 const OUTPUT: &str = "Output";
@@ -13,31 +13,31 @@ const BY_INDEX: &str = "By index";
 const CANCEL: &str = "Cancel";
 
 fn main() {
-    let mut circuit = initialize();
+    let mut simulator = initialize();
     let mut running = true;
 
     while running {
-        running = menu(&mut circuit);
+        running = menu(&mut simulator);
     }
 }
 
-fn initialize() -> Circuit {
+fn initialize() -> Simulator {
     let options = vec![
         "Yes",
         "No",
     ];
 
-    let answer = Select::new("Do you want to create a new circuit simulation?", options).prompt();
+    let answer = Select::new("Do you want to create a new simulator simulation?", options).prompt();
 
     match answer {
         Ok(choice) => {
             match choice {
                 "Yes" => {
-                    println!("Creating new empty circuit simulation!");
-                    Circuit::new()
+                    println!("Creating new empty simulator simulation!");
+                    Simulator::new()
                 },
                 "No" => {
-                    println!("Loading circuit simulations is currently not supported!");
+                    println!("Loading simulator simulations is currently not supported!");
                     exit(0);
                 },
                 _ => simple_error_exiting(),
@@ -49,7 +49,7 @@ fn initialize() -> Circuit {
     }
 }
 
-fn menu(circuit: &mut Circuit) -> bool {
+fn menu(simulator: &mut Simulator) -> bool {
 
     let options = vec![
         "Add",
@@ -66,9 +66,9 @@ fn menu(circuit: &mut Circuit) -> bool {
     };
 
     match choice {
-        "Add" => add(circuit),
-        "Interact" => interact(circuit),
-        "Inspect" => inspect(circuit),
+        "Add" => add(simulator),
+        "Interact" => interact(simulator),
+        "Inspect" => inspect(simulator),
         "Exit" => {
             println!("Exiting...");
             return false;
@@ -79,7 +79,7 @@ fn menu(circuit: &mut Circuit) -> bool {
     true
 }
 
-fn add(circuit: &mut Circuit) {
+fn add(simulator: &mut Simulator) {
 
     let element_options = &[
         INPUT,
@@ -93,9 +93,9 @@ fn add(circuit: &mut Circuit) {
     if let Ok(choice) = element_answer {
         
         match choice {
-            INPUT => add_input(circuit),
-            OUTPUT => add_output(circuit),
-            COMPONENT => add_component(circuit),
+            INPUT => add_input(simulator),
+            OUTPUT => add_output(simulator),
+            COMPONENT => add_component(simulator),
             _ => (),
         }
 
@@ -104,7 +104,7 @@ fn add(circuit: &mut Circuit) {
     }
 }
 
-fn add_input(circuit: &mut Circuit) {
+fn add_input(simulator: &mut Simulator) {
 
     let options = &[Value::On, Value::Off];
 
@@ -112,34 +112,34 @@ fn add_input(circuit: &mut Circuit) {
 
     match answer {
         Ok(choice) => {
-            let (input_index, value_index) = circuit.add_input(choice);
+            let (input_index, value_index) = simulator.add_input(choice);
             println!("New input with index {input_index} and initial value {choice} at value index {value_index} has been added.");
         },
         Err(_) => simple_error(),
     }
 }
 
-fn add_output(circuit: &mut Circuit) {
+fn add_output(simulator: &mut Simulator) {
 
-    if circuit.all_values().is_empty() {
-        println!("The circuit has no values. Without a value no output can be added.");
+    if simulator.all_values().is_empty() {
+        println!("The simulator has no values. Without a value no output can be added.");
         return;
     }
 
-    let options: Vec<_> = (0..circuit.all_values().len()).collect();
+    let options: Vec<_> = (0..simulator.all_values().len()).collect();
 
     let answer = Select::new("Which value should the new output read?", options).prompt();
 
     match answer {
         Ok(choice) => {
-            let output_index = circuit.add_output(choice);
+            let output_index = simulator.add_output(choice);
             println!("New output with index {output_index} reading value form {choice} has been added.");
         },
         Err(_) => simple_error(),
     }
 }
 
-fn add_component(circuit: &mut Circuit) {
+fn add_component(simulator: &mut Simulator) {
 
     let functions = &[
         Function::And,
@@ -147,7 +147,7 @@ fn add_component(circuit: &mut Circuit) {
         Function::Not,
     ];
 
-    let applicable_functions: Vec<_> = functions.iter().filter(|function| function.input_value_count() <= circuit.all_values().len()).collect();
+    let applicable_functions: Vec<_> = functions.iter().filter(|function| function.input_value_count() <= simulator.all_values().len()).collect();
 
     if applicable_functions.is_empty() {
         println!("There are no components that can be created because there are to few values that could be used as inputs.");
@@ -158,14 +158,14 @@ fn add_component(circuit: &mut Circuit) {
 
     match funtion_answer {
         Ok(&function_choice) => {
-            let input_value_indices: Vec<_> = (0..circuit.all_values().len()).collect();
+            let input_value_indices: Vec<_> = (0..simulator.all_values().len()).collect();
 
             // TODO: validators for ensuring min/max ammounts of inputs are chosen
             let input_answer = MultiSelect::new("Choose the values to use as inputs for the component:", input_value_indices).prompt();
 
             match input_answer {
                 Ok(input_choice) => {
-                    let (component_index, output_indices) = circuit.add_component(function_choice, input_choice.clone());
+                    let (component_index, output_indices) = simulator.add_component(function_choice, input_choice.clone());
                     println!("Component with index {component_index} using function {function_choice} on inputs {input_choice:?} with outputs {output_indices:?} has been added.")
                 },
                 Err(_) => simple_error(),
@@ -175,27 +175,28 @@ fn add_component(circuit: &mut Circuit) {
     }
 }
 
-fn interact(circuit: &mut Circuit) {
+fn interact(simulator: &mut Simulator) {
 
     let interaction_options = &[
         "Set input",
-        "Evaluate component",
+        "Simulate",
+        "Step",
     ];
 
     let interaction_answer = Select::new("Which interaction do you want to do?", interaction_options.to_vec()).prompt();
 
     if let Ok(interaction_choice) = interaction_answer {
         match interaction_choice {
-            "Set input" => set_input(circuit),
-            "Evaluate component" => evaluate_component(circuit),
+            "Set input" => set_input(simulator),
+            "Simulate" => simulate(simulator),
+            "Step" => simulate_step(simulator),
             _ => simple_error()
         }
     }
-
 }
 
-fn set_input(circuit: &mut Circuit) {
-    let input_index_options = (0..circuit.all_inputs().len()).collect();
+fn set_input(simulator: &mut Simulator) {
+    let input_index_options = (0..simulator.all_inputs().len()).collect();
     let input_index_answer = Select::new("Which input value should be set?", input_index_options).prompt();
 
     if let Ok(input_index_choice) = input_index_answer {
@@ -208,7 +209,7 @@ fn set_input(circuit: &mut Circuit) {
         let new_value_answer = Select::new("What value should the input be set to?", value_options.to_vec()).prompt();
 
         if let Ok(new_value_choice) = new_value_answer {
-            circuit.set_input(input_index_choice, new_value_choice);
+            simulator.set_input(input_index_choice, new_value_choice);
             println!("The value of input {input_index_choice} has been set to {new_value_choice}.");
         }
 
@@ -217,26 +218,15 @@ fn set_input(circuit: &mut Circuit) {
     }
 }
 
-fn evaluate_component(circuit: &mut Circuit) {
-
-    if circuit.all_components().is_empty() {
-        println!("There are no components in the circuit.");
-        return;
-    }
-
-    let component_indices: Vec<_> = (0..circuit.all_components().len()).collect();
-    let component_index_answer = Select::new("Which component should be evaluated?", component_indices).prompt();
-
-    match component_index_answer {
-        Ok(component_index) => {
-            let changed_value_indices = circuit.evaluate_component(component_index);
-            println!("Component {component_index} has been evaluated. Values at indices {changed_value_indices:?} have changed.");
-        },
-        Err(_) => simple_error(),
-    }
+fn simulate(simulator: &mut Simulator) {
+    simulator.simulate();
 }
 
-fn inspect(circuit: &mut Circuit) {
+fn simulate_step(simulator: &mut Simulator) {
+    simulator.step();
+}
+
+fn inspect(simulator: &mut Simulator) {
 
     let inspect_options = &[
         INPUT,
@@ -266,28 +256,28 @@ fn inspect(circuit: &mut Circuit) {
                         INPUT => {
                             println!("Inspecting all inputs:");
 
-                            circuit.all_inputs().iter().enumerate().for_each(|(i, input)| {
+                            simulator.all_inputs().iter().enumerate().for_each(|(i, input)| {
                                 println!("Index: {i}\n{input:?}");
                             });
                         },
                         OUTPUT => {
                             println!("Inspecting all outputs:");
 
-                            circuit.all_outputs().iter().enumerate().for_each(|(i, input)| {
+                            simulator.all_outputs().iter().enumerate().for_each(|(i, input)| {
                                 println!("Index: {i}\n{input:?}");
                             });
                         },
                         COMPONENT => {
                             println!("Inspecting all components:");
 
-                            circuit.all_components().iter().enumerate().for_each(|(i, input)| {
+                            simulator.all_components().iter().enumerate().for_each(|(i, input)| {
                                 println!("Index: {i}\n{input:?}");
                             });
                         },
                         VALUE => {
                             println!("Inspecting all values:");
 
-                            circuit.all_values().iter().enumerate().for_each(|(i, input)| {
+                            simulator.all_values().iter().enumerate().for_each(|(i, input)| {
                                 println!("Index: {i}\n{input:?}");
                             });
                         },
@@ -299,10 +289,10 @@ fn inspect(circuit: &mut Circuit) {
                 },
                 BY_INDEX => {
                     let choosable_indices: Vec<_> = match inspect_choice {
-                        INPUT => (0..circuit.all_inputs().len()).collect(),
-                        OUTPUT => (0..circuit.all_outputs().len()).collect(),
-                        COMPONENT => (0..circuit.all_components().len()).collect(),
-                        VALUE => (0..circuit.all_values().len()).collect(),
+                        INPUT => (0..simulator.all_inputs().len()).collect(),
+                        OUTPUT => (0..simulator.all_outputs().len()).collect(),
+                        COMPONENT => (0..simulator.all_components().len()).collect(),
+                        VALUE => (0..simulator.all_values().len()).collect(),
                         _ => {
                             simple_error();
                             return;
@@ -314,19 +304,19 @@ fn inspect(circuit: &mut Circuit) {
                     if let Ok(index_choice) = index_answer {
                         match inspect_choice {
                             INPUT => {
-                                let choosen_input = &circuit.all_inputs()[index_choice];
+                                let choosen_input = &simulator.all_inputs()[index_choice];
                                 println!("Inspecting input at index {index_choice}:\n{choosen_input:?}");
                             },
                             OUTPUT => {
-                                let choosen_input = &circuit.all_outputs()[index_choice];
+                                let choosen_input = &simulator.all_outputs()[index_choice];
                                 println!("Inspecting output at index {index_choice}:\n{choosen_input:?}");
                             },
                             COMPONENT => {
-                                let choosen_input = &circuit.all_components()[index_choice];
+                                let choosen_input = &simulator.all_components()[index_choice];
                                 println!("Inspecting component at index {index_choice}:\n{choosen_input:?}");
                             },
                             VALUE => {
-                                let choosen_input = &circuit.all_values()[index_choice];
+                                let choosen_input = &simulator.all_values()[index_choice];
                                 println!("Inspecting value at index {index_choice}:\n{choosen_input:?}");
                             },
                             _ => {

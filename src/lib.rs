@@ -1,4 +1,10 @@
-use std::{ops::{BitAnd, BitOr, Not}, fmt::Display};
+use std::{ops::{BitAnd, BitOr, Not}, fmt::Display, num::NonZeroUsize, collections::VecDeque};
+
+pub struct Simulator {
+    circuit: Circuit,
+    changed_values: VecDeque<usize>,
+    steps_until_unstable: NonZeroUsize,
+}
 
 pub struct Circuit {
     inputs: Vec<Input>,
@@ -35,6 +41,100 @@ pub enum Function {
 pub enum Value {
     On,
     Off,
+}
+
+impl Simulator {
+    pub fn new() -> Self {
+        Self {
+            circuit: Circuit::new(),
+            changed_values: VecDeque::new(),
+            steps_until_unstable: NonZeroUsize::new(1000).unwrap(),
+        }
+    }
+
+    pub fn set_input(&mut self, index: usize, value: Value) {
+        self.circuit.set_input(index, value);
+        self.changed_values.push_back(index);
+    }
+
+    pub fn get_input(&mut self, index: usize) -> Value {
+        self.circuit.get_input(index)
+    }
+
+    pub fn get_output(&self, index: usize) -> Value {
+        self.circuit.get_output(index)
+    }
+
+    pub fn add_input(&mut self, initial_value: Value) -> (usize, usize) {
+        let (input_index, value_index) = self.circuit.add_input(initial_value);
+        self.changed_values.push_back(value_index);
+
+        (input_index, value_index)
+    }
+
+    pub fn add_output(&mut self, value_index: usize) -> usize {
+        self.circuit.add_output(value_index)
+    }
+
+    pub fn add_component(&mut self, function: Function, input_value_indices: Vec<usize>) -> (usize, Vec<usize>) {
+        self.circuit.add_component(function, input_value_indices)
+    }
+
+    pub fn all_inputs(&self) -> &[Input] {
+        &self.circuit.all_inputs()
+    }
+
+    pub fn all_outputs(&self) -> &[Output] {
+        &self.circuit.all_outputs()
+    }
+
+    pub fn all_components(&self) -> &[Component] {
+        &self.circuit.all_components()
+    }
+
+    pub fn all_values(&self) -> &[Value] {
+        &self.circuit.all_values()
+    }
+
+    pub fn step(&mut self) {
+        if let Some(value_to_check) = self.changed_values.pop_front() {
+            let components_to_update = self.find_components_by_input(value_to_check);
+
+            for component_index in components_to_update {
+                let changed_value_indices = self.circuit.evaluate_component(component_index);
+
+                for index in changed_value_indices {
+                    if self.changed_values.contains(&index) {
+                        self.changed_values.push_back(index);
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn simulate(&mut self) -> bool {
+        let mut step_count: usize = 0;
+
+        while !self.changed_values.is_empty() {
+            step_count += 1;
+
+            if step_count > self.steps_until_unstable.into() {
+                return false;
+            }
+
+            self.step();
+        }
+
+        true
+    }
+
+    fn find_components_by_input(&mut self, input_value_index: usize) -> Vec<usize> {
+        self.circuit.all_components().iter()
+            .enumerate()
+            .filter(|(_, component)| component.input_value_indices.contains(&input_value_index))
+            .map(|(i, _)| i)
+            .collect()
+    }
 }
 
 impl Circuit {
