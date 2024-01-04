@@ -80,20 +80,12 @@ impl Simulator {
         self.circuit.add_component(function, input_value_indices)
     }
 
-    pub fn all_inputs(&self) -> &[Input] {
-        &self.circuit.all_inputs()
+    pub fn circuit(&self) -> &Circuit {
+        &self.circuit
     }
 
-    pub fn all_outputs(&self) -> &[Output] {
-        &self.circuit.all_outputs()
-    }
-
-    pub fn all_components(&self) -> &[Component] {
-        &self.circuit.all_components()
-    }
-
-    pub fn all_values(&self) -> &[Value] {
-        &self.circuit.all_values()
+    pub fn value_for_output(&self, output: &Output) -> Value {
+        self.circuit.all_values()[output.value_index]
     }
 
     pub fn step(&mut self) {
@@ -174,7 +166,7 @@ impl Circuit {
     pub fn add_output(&mut self, value_index: usize) -> usize {
         self.outputs.push(Output { value_index });
         let output_index = self.outputs.len() - 1;
-        
+
         output_index
     }
 
@@ -200,10 +192,10 @@ impl Circuit {
             .enumerate()
             .filter(|(_, (before, after))| before != after).map(|(i, (_, after))| (i, after))
             .map(|(component_output_index, value)| (component.output_value_indices[component_output_index], value));
-        
+
 
         value_changes.clone().for_each(|(output_index, &value)| self.values[output_index] = value);
-        
+
         value_changes.map(|(output_index, _)| output_index).collect()
     }
 
