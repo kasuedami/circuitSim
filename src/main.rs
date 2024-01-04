@@ -12,7 +12,6 @@ const VALUE: &str = "Value";
 
 const ALL: &str = "All";
 const BY_INDEX: &str = "By index";
-const CANCEL: &str = "Cancel";
 
 fn main() {
     let mut simulator = initialize();
@@ -89,7 +88,6 @@ fn add(simulator: &mut Simulator) {
         INPUT,
         OUTPUT,
         COMPONENT,
-        CANCEL,
     ];
 
     let element_answer = Select::new("Which element should be added?", element_options.to_vec()).prompt();
@@ -264,7 +262,6 @@ fn inspect(simulator: &mut Simulator) {
         OUTPUT,
         COMPONENT,
         VALUE,
-        CANCEL,
     ];
 
     let inspect_answer = Select::new("Which element should be inspected?", inspect_options.to_vec()).prompt();
@@ -274,7 +271,6 @@ fn inspect(simulator: &mut Simulator) {
         let select_options = &[
             ALL,
             BY_INDEX,
-            CANCEL,
         ];
 
         let select_answer = Select::new("Do you want to inspect all or by index?", select_options.to_vec()).prompt();
