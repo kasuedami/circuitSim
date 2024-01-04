@@ -55,6 +55,16 @@ impl Simulator {
         }
     }
 
+    pub fn from_circuit(circuit: Circuit) -> Self {
+        let all_value_indices = (0..circuit.all_values().len()).collect();
+
+        Self {
+            circuit,
+            changed_values: all_value_indices,
+            steps_until_unstable: NonZeroUsize::new(1000).unwrap(),
+        }
+    }
+
     pub fn set_input(&mut self, index: usize, value: Value) {
         self.circuit.set_input(index, value);
         self.changed_values.push_back(index);

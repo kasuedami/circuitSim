@@ -1,7 +1,7 @@
 use std::{process::exit, fs, io::Write};
 
 use inquire::{Select, MultiSelect, list_option::ListOption, validator::Validation, Text};
-use simulator::{Function, Value, Simulator};
+use simulator::{Function, Value, Simulator, Circuit};
 
 mod cli_util;
 
@@ -25,22 +25,22 @@ fn main() {
 
 fn initialize() -> Simulator {
     let options = vec![
-        "Yes",
-        "No",
+        "New",
+        "Load",
     ];
 
-    let answer = Select::new("Do you want to create a new simulator simulation?", options).prompt();
+    let answer = Select::new("Do you want to create a new circuit simulation or load an existing?", options).prompt();
 
     match answer {
         Ok(choice) => {
             match choice {
-                "Yes" => {
+                "New" => {
                     println!("Creating new empty simulator simulation!");
                     Simulator::new()
                 },
-                "No" => {
-                    println!("Loading simulator simulations is currently not supported!");
-                    exit(0);
+                "Load" => {
+                    let loaded_circuit = load();
+                    Simulator::from_circuit(loaded_circuit)
                 },
                 _ => simple_error_exiting(),
             }
@@ -396,6 +396,26 @@ fn save(simulator: &mut Simulator) {
 
     } else {
         println!("Error while serializing!");
+    }
+}
+
+fn load() -> Circuit {
+    let current_dir = std::env::current_dir().unwrap();
+    let help_message = format!("Current directory: {}", current_dir.to_string_lossy());
+
+    let file_to_load_answer = Text::new("File to load:")
+        .with_autocomplete(cli_util::FilePathCompleter::default())
+        .with_help_message(&help_message)
+        .prompt();
+
+    if let Ok(file_to_load_choice) = file_to_load_answer {
+        let serial_circuit = fs::read(file_to_load_choice).unwrap();
+        let loaded_circuit: Circuit = serde_json::from_slice(&serial_circuit).unwrap();
+
+        loaded_circuit
+    } else {
+        println!("Error while choosing save location!");
+        Circuit::new()
     }
 }
 
