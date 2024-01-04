@@ -1,7 +1,9 @@
-use std::process::exit;
+use std::{process::exit, fs, io::Write};
 
-use inquire::{Select, MultiSelect, list_option::ListOption, validator::Validation};
+use inquire::{Select, MultiSelect, list_option::ListOption, validator::Validation, Text};
 use simulator::{Function, Value, Simulator};
+
+mod cli_util;
 
 const INPUT: &str = "Input";
 const OUTPUT: &str = "Output";
@@ -55,6 +57,7 @@ fn menu(simulator: &mut Simulator) -> bool {
         "Add",
         "Interact",
         "Inspect",
+        "Save",
         "Exit",
     ];
 
@@ -69,6 +72,7 @@ fn menu(simulator: &mut Simulator) -> bool {
         "Add" => add(simulator),
         "Interact" => interact(simulator),
         "Inspect" => inspect(simulator),
+        "Save" => save(simulator),
         "Exit" => {
             println!("Exiting...");
             return false;
@@ -365,6 +369,33 @@ fn inspect(simulator: &mut Simulator) {
 
     } else {
         simple_error()
+    }
+}
+
+fn save(simulator: &mut Simulator) {
+    if let Ok(serialized_circuit) = serde_json::to_string(simulator.circuit()) {
+
+        let current_dir = std::env::current_dir().unwrap();
+        let help_message = format!("Current directory: {}", current_dir.to_string_lossy());
+
+        let save_location_answer = Text::new("Save location:")
+            .with_autocomplete(cli_util::FilePathCompleter::default())
+            .with_help_message(&help_message)
+            .prompt();
+
+        if let Ok(save_location_choice) = save_location_answer {
+            if let Ok(mut file) = fs::File::create(save_location_choice) {
+                if file.write(serialized_circuit.as_bytes()).is_ok() {
+                    println!("Circuit has been saved.");
+                }
+            }
+
+        } else {
+            println!("Error while choosing save location!");
+        }
+
+    } else {
+        println!("Error while serializing!");
     }
 }
 

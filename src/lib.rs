@@ -1,11 +1,14 @@
 use std::{ops::{BitAnd, BitOr, Not}, fmt::Display, num::NonZeroUsize, collections::VecDeque};
 
+use serde::{Deserialize, Serialize};
+
 pub struct Simulator {
     circuit: Circuit,
     changed_values: VecDeque<usize>,
     steps_until_unstable: NonZeroUsize,
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct Circuit {
     inputs: Vec<Input>,
     outputs: Vec<Output>,
@@ -13,31 +16,31 @@ pub struct Circuit {
     values: Vec<Value>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Input {
     value_index: usize,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Output {
     value_index: usize,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Component {
     input_value_indices: Vec<usize>,
     output_value_indices: Vec<usize>,
     function: Function,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum Function {
     And,
     Or,
     Not,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Value {
     On,
     Off,
