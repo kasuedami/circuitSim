@@ -196,7 +196,7 @@ impl Circuit {
         let input_values: Vec<_> = component.input_value_indices.iter().map(|&input_index| self.values[input_index]).collect();
         let befor_output_values: Vec<_> = component.output_value_indices.iter().map(|&output_index| self.values[output_index]).collect();
 
-        let after_output_values = component.function.evaluate(input_values);
+        let after_output_values = component.function.evaluate(&input_values);
         let value_changes = befor_output_values.iter().zip(after_output_values.iter())
             .enumerate()
             .filter(|(_, (before, after))| before != after).map(|(i, (_, after))| (i, after))

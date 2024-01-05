@@ -14,7 +14,7 @@ pub enum Function {
 }
 
 impl Function {
-    pub fn evaluate(&self, input_values: Vec<Value>) -> Vec<Value> {
+    pub fn evaluate(&self, input_values: &[Value]) -> Vec<Value> {
         match self {
             Function::And => {
                 let value = input_values.iter().fold(Value::On, |acc, &x| acc & x);
@@ -60,5 +60,73 @@ impl Function {
 impl Display for Function {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{self:?}")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn and() {
+        let and = Function::And;
+
+        // cases where result should be Value::On
+        assert_eq!(and.evaluate(&[Value::On,  Value::On]),  vec![Value::On]);
+
+        // cases where result should be Value::Off
+        assert_eq!(and.evaluate(&[Value::On,  Value::Off]), vec![Value::Off]);
+        assert_eq!(and.evaluate(&[Value::Off, Value::On]),  vec![Value::Off]);
+        assert_eq!(and.evaluate(&[Value::Off, Value::Off]), vec![Value::Off]);
+    }
+
+    #[test]
+    fn or() {
+        let or = Function::Or;
+
+        // cases where result should be Value::On
+        assert_eq!(or.evaluate(&[Value::On,  Value::On]),  vec![Value::On]);
+        assert_eq!(or.evaluate(&[Value::On,  Value::Off]), vec![Value::On]);
+        assert_eq!(or.evaluate(&[Value::Off, Value::On]),  vec![Value::On]);
+
+        // cases where result should be Value::Off
+        assert_eq!(or.evaluate(&[Value::Off, Value::Off]), vec![Value::Off]);
+    }
+
+    #[test]
+    fn not() {
+        let not = Function::Not;
+
+        // cases where result should be Value::On
+        assert_eq!(not.evaluate(&[Value::Off]), vec![Value::On]);
+
+        // cases where result should be Value::Off
+        assert_eq!(not.evaluate(&[Value::On]),  vec![Value::Off]);
+    }
+
+    #[test]
+    fn nand() {
+        let nand = Function::Nand;
+
+        // cases where result should be Value::On
+        assert_eq!(nand.evaluate(&[Value::On,  Value::Off]), vec![Value::On]);
+        assert_eq!(nand.evaluate(&[Value::Off, Value::On]),  vec![Value::On]);
+        assert_eq!(nand.evaluate(&[Value::Off, Value::Off]), vec![Value::On]);
+
+        // cases where result should be Value::Off
+        assert_eq!(nand.evaluate(&[Value::On,  Value::On]),  vec![Value::Off]);
+    }
+
+    #[test]
+    fn nor() {
+        let nor = Function::Nor;
+
+        // cases where result should be Value::On
+        assert_eq!(nor.evaluate(&[Value::Off, Value::Off]), vec![Value::On]);
+
+        // cases where result should be Value::Off
+        assert_eq!(nor.evaluate(&[Value::On,  Value::On]),  vec![Value::Off]);
+        assert_eq!(nor.evaluate(&[Value::On,  Value::Off]), vec![Value::Off]);
+        assert_eq!(nor.evaluate(&[Value::Off, Value::On]),  vec![Value::Off]);
     }
 }
