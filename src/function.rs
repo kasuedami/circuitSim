@@ -15,7 +15,7 @@ pub enum Function {
 }
 
 impl Function {
-    pub fn evaluate(&self, input_values: &[Value]) -> Vec<Value> {
+    pub fn evaluate(&mut self, input_values: &[Value]) -> Vec<Value> {
         match self {
             Function::And => {
                 let value = input_values.iter().fold(Value::On, |acc, &x| acc & x);
@@ -35,19 +35,17 @@ impl Function {
                 vec![value]
             },
             Function::Circuit(circuit) => {
-                // TODO: rework this better, at least do some error handling if simulate() -> false
-
-                let mut helper = circuit.clone();
-
                 for i in 0..input_values.len() {
-                    helper.set_input(i, input_values[i]);
+                    circuit.set_input(i, input_values[i]);
                 }
 
-                let mut simulator = Simulator::from_circuit(helper);
+                let mut simulator = Simulator::from_circuit(circuit.clone());
                 simulator.simulate();
 
-                simulator.circuit().all_outputs().iter()
-                    .map(|ouput| simulator.circuit().all_values()[ouput.value_index])
+                *circuit = simulator.circuit;
+
+                circuit.all_outputs().iter()
+                    .map(|output| circuit.all_values()[output.value_index])
                     .collect()
             }
         }
@@ -88,7 +86,7 @@ mod tests {
 
     #[test]
     fn and() {
-        let and = Function::And;
+        let mut and = Function::And;
 
         // cases where result should be Value::On
         assert_eq!(and.evaluate(&[Value::On,  Value::On]),  vec![Value::On]);
@@ -101,7 +99,7 @@ mod tests {
 
     #[test]
     fn or() {
-        let or = Function::Or;
+        let mut or = Function::Or;
 
         // cases where result should be Value::On
         assert_eq!(or.evaluate(&[Value::On,  Value::On]),  vec![Value::On]);
@@ -114,7 +112,7 @@ mod tests {
 
     #[test]
     fn not() {
-        let not = Function::Not;
+        let mut not = Function::Not;
 
         // cases where result should be Value::On
         assert_eq!(not.evaluate(&[Value::Off]), vec![Value::On]);
@@ -125,7 +123,7 @@ mod tests {
 
     #[test]
     fn nand() {
-        let nand = Function::Nand;
+        let mut nand = Function::Nand;
 
         // cases where result should be Value::On
         assert_eq!(nand.evaluate(&[Value::On,  Value::Off]), vec![Value::On]);
@@ -138,7 +136,7 @@ mod tests {
 
     #[test]
     fn nor() {
-        let nor = Function::Nor;
+        let mut nor = Function::Nor;
 
         // cases where result should be Value::On
         assert_eq!(nor.evaluate(&[Value::Off, Value::Off]), vec![Value::On]);
@@ -151,7 +149,7 @@ mod tests {
 
     #[test]
     fn circuit() {
-        let circuit = Function::Circuit(generate_and_circuit());
+        let mut circuit = Function::Circuit(generate_and_circuit());
 
         // cases where result should be Value::On
         assert_eq!(circuit.evaluate(&[Value::On, Value::On]), vec![Value::On]);

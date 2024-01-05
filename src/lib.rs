@@ -192,7 +192,7 @@ impl Circuit {
     }
 
     pub fn evaluate_component(&mut self, component_index: usize) -> Vec<usize> {
-        let component = &self.components[component_index];
+        let component = &mut self.components[component_index];
         let input_values: Vec<_> = component.input_value_indices.iter().map(|&input_index| self.values[input_index]).collect();
         let befor_output_values: Vec<_> = component.output_value_indices.iter().map(|&output_index| self.values[output_index]).collect();
 
