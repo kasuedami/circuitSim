@@ -14,8 +14,8 @@ pub enum Function {
     Circuit(Circuit),
     FlipFlopRS(Value),
     FlipFlopJK(FlipFlopJK),
-    FlipFlopD(Value),
-    FlipFlopT(Value),
+    FlipFlopD(FlipFlopD),
+    FlipFlopT(FlipFlopT),
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -25,7 +25,19 @@ struct TransientDetection {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct FlipFlopJK {
-    clock: TransientDetection,
+    clock_input: TransientDetection,
+    state: Value,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct FlipFlopD {
+    clock_input: TransientDetection,
+    state: Value,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct FlipFlopT {
+    clock_input: TransientDetection,
     state: Value,
 }
 
@@ -74,7 +86,7 @@ impl Function {
                 }
             },
             Function::FlipFlopJK(flip_flop_jk) => {
-                if flip_flop_jk.clock.is_transient(input_values[2]) && input_values[2] == Value::On {
+                if flip_flop_jk.clock_input.is_transient(input_values[2]) && input_values[2] == Value::On {
                     match (input_values[0], input_values[1]) {
                         (Value::On, Value::On) => flip_flop_jk.state = !flip_flop_jk.state,
                         (Value::On, Value::Off) => flip_flop_jk.state = Value::On,
@@ -85,11 +97,21 @@ impl Function {
 
                 vec![flip_flop_jk.state, !flip_flop_jk.state]
             }
-            Function::FlipFlopD(state) => {
-                todo!()
+            Function::FlipFlopD(flip_flop_d) => {
+                if flip_flop_d.clock_input.is_transient(input_values[1]) && input_values[1] == Value::On {
+                    flip_flop_d.state = input_values[0];
+                }
+
+                vec![flip_flop_d.state, !flip_flop_d.state]
             },
-            Function::FlipFlopT(state) => {
-                todo!()
+            Function::FlipFlopT(flip_flop_t) => {
+                if flip_flop_t.clock_input.is_transient(input_values[1]) && input_values[1] == Value::On {
+                    if input_values[0] == Value::On {
+                        flip_flop_t.state = !flip_flop_t.state;
+                    }
+                }
+
+                vec![flip_flop_t.state, !flip_flop_t.state]
             }
         }
     }
@@ -145,7 +167,29 @@ impl TransientDetection {
 impl FlipFlopJK {
     pub fn new(initial_value: Value) -> Self {
         Self {
-            clock: TransientDetection {
+            clock_input: TransientDetection {
+                old_value: Value::Off,
+            },
+            state: initial_value,
+        }
+    }
+}
+
+impl FlipFlopD {
+    pub fn new(initial_value: Value) -> Self {
+        Self {
+            clock_input: TransientDetection {
+                old_value: Value::Off,
+            },
+            state: initial_value,
+        }
+    }
+}
+
+impl FlipFlopT {
+    pub fn new(initial_value: Value) -> Self {
+        Self {
+            clock_input: TransientDetection {
                 old_value: Value::Off,
             },
             state: initial_value,
@@ -234,7 +278,19 @@ mod tests {
     }
 
     #[test]
-    fn rs_flip_flop() {
+    fn transient_detection() {
+        let mut transient_detection = TransientDetection {
+            old_value: Value::Off,
+        };
+
+        assert_eq!(transient_detection.is_transient(Value::Off), false);
+        assert_eq!(transient_detection.is_transient(Value::On), true);
+        assert_eq!(transient_detection.is_transient(Value::On), false);
+        assert_eq!(transient_detection.is_transient(Value::Off), true);
+    }
+
+    #[test]
+    fn flip_flop_rs() {
         let mut rs = Function::FlipFlopRS(Value::On);
 
         let main_on = &[Value::On, Value::Off];
@@ -251,19 +307,7 @@ mod tests {
     }
 
     #[test]
-    fn transient_detection() {
-        let mut transient_detection = TransientDetection {
-            old_value: Value::Off,
-        };
-
-        assert_eq!(transient_detection.is_transient(Value::Off), false);
-        assert_eq!(transient_detection.is_transient(Value::On), true);
-        assert_eq!(transient_detection.is_transient(Value::On), false);
-        assert_eq!(transient_detection.is_transient(Value::Off), true);
-    }
-
-    #[test]
-    fn jk_flip_flop() {
+    fn flip_flop_jk() {
         let mut jk = Function::FlipFlopJK(FlipFlopJK::new(Value::On));
 
         let main_on = &[Value::On, Value::Off];
@@ -288,6 +332,43 @@ mod tests {
         assert_eq!(jk.evaluate(&[Value::On, Value::Off, Value::Off]), main_off);
 
         assert_eq!(jk.evaluate(&[Value::On, Value::Off, Value::On]), main_on);
+    }
+
+    #[test]
+    fn flip_flop_d() {
+        let mut d = Function::FlipFlopD(FlipFlopD::new(Value::On));
+
+        let main_on = &[Value::On, Value::Off];
+        let main_off = &[Value::Off, Value::On];
+
+        assert_eq!(d.evaluate(&[Value::Off, Value::Off]), main_on);
+        assert_eq!(d.evaluate(&[Value::On, Value::Off]), main_on);
+        assert_eq!(d.evaluate(&[Value::On, Value::On]), main_on);
+        assert_eq!(d.evaluate(&[Value::Off, Value::On]), main_on);
+        assert_eq!(d.evaluate(&[Value::Off, Value::Off]), main_on);
+        assert_eq!(d.evaluate(&[Value::Off, Value::On]), main_off);
+        assert_eq!(d.evaluate(&[Value::Off, Value::Off]), main_off);
+        assert_eq!(d.evaluate(&[Value::On, Value::Off]), main_off);
+        assert_eq!(d.evaluate(&[Value::Off, Value::On]), main_off);
+    }
+
+    #[test]
+    fn flip_flop_t() {
+        let mut t = Function::FlipFlopT(FlipFlopT::new(Value::On));
+
+        let main_on = &[Value::On, Value::Off];
+        let main_off = &[Value::Off, Value::On];
+
+        assert_eq!(t.evaluate(&[Value::Off, Value::Off]), main_on);
+        assert_eq!(t.evaluate(&[Value::Off, Value::On]), main_on);
+        assert_eq!(t.evaluate(&[Value::On, Value::Off]), main_on);
+        assert_eq!(t.evaluate(&[Value::On, Value::On]), main_off);
+        assert_eq!(t.evaluate(&[Value::On, Value::Off]), main_off);
+        assert_eq!(t.evaluate(&[Value::Off, Value::On]), main_off);
+        assert_eq!(t.evaluate(&[Value::On, Value::Off]), main_off);
+        assert_eq!(t.evaluate(&[Value::Off, Value::Off]), main_off);
+        assert_eq!(t.evaluate(&[Value::On, Value::On]), main_on);
+        assert_eq!(t.evaluate(&[Value::On, Value::Off]), main_on);
     }
 
     mod util {
