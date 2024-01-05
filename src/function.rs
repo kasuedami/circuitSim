@@ -9,6 +9,8 @@ pub enum Function {
     And,
     Or,
     Not,
+    Nand,
+    Nor,
 }
 
 impl Function {
@@ -23,6 +25,14 @@ impl Function {
                 vec![value]
             },
             Function::Not => vec![!input_values[0]],
+            Function::Nand => {
+                let value = !input_values.iter().fold(Value::On, |acc, &x| acc & x);
+                vec![value]
+            },
+            Function::Nor => {
+                let value = !input_values.iter().fold(Value::Off, |acc, &x| acc | x);
+                vec![value]
+            }
         }
     }
 
@@ -31,6 +41,8 @@ impl Function {
             Function::And => 1,
             Function::Or => 1,
             Function::Not => 1,
+            Function::Nand => 1,
+            Function::Nor => 1,
         }
     }
 
@@ -39,6 +51,8 @@ impl Function {
             Function::And => 2,
             Function::Or => 2,
             Function::Not => 1,
+            Function::Nand => 2,
+            Function::Nor => 2,
         }
     }
 }
