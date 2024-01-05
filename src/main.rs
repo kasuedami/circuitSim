@@ -161,7 +161,7 @@ fn add_component(simulator: &mut Simulator) {
     let funtion_answer = Select::new("Which function should the new component be using?", applicable_functions).prompt();
 
     match funtion_answer {
-        Ok(&function_choice) => {
+        Ok(&ref function_choice) => {
             let input_value_indices: Vec<_> = (0..simulator.circuit().all_values().len()).collect();
 
             let valid_input_number = function_choice.input_value_count();
@@ -181,7 +181,7 @@ fn add_component(simulator: &mut Simulator) {
 
             match input_answer {
                 Ok(input_choice) => {
-                    let (component_index, output_indices) = simulator.add_component(function_choice, input_choice.clone());
+                    let (component_index, output_indices) = simulator.add_component(function_choice.clone(), input_choice.clone());
                     println!("Component with index {component_index} using function {function_choice} on inputs {input_choice:?} with outputs {output_indices:?} has been added.")
                 },
                 Err(_) => simple_error(),

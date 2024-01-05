@@ -11,7 +11,7 @@ pub struct Simulator {
     steps_until_unstable: NonZeroUsize,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Circuit {
     inputs: Vec<Input>,
     outputs: Vec<Output>,
@@ -19,17 +19,17 @@ pub struct Circuit {
     values: Vec<Value>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub struct Input {
     value_index: usize,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub struct Output {
     value_index: usize,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Component {
     input_value_indices: Vec<usize>,
     output_value_indices: Vec<usize>,
