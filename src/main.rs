@@ -147,6 +147,8 @@ fn add_component(simulator: &mut Simulator) {
         Function::And,
         Function::Or,
         Function::Not,
+        Function::Nand,
+        Function::Nor,
     ];
 
     let applicable_functions: Vec<_> = functions.iter().filter(|function| function.input_value_count() <= simulator.circuit().all_values().len()).collect();
