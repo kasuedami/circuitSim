@@ -153,6 +153,7 @@ fn add_component(simulator: &mut Simulator) {
         Function::FlipFlopJK(FlipFlopJK::new(Value::On)),
         Function::FlipFlopD(FlipFlopD::new(Value::On)),
         Function::FlipFlopT(FlipFlopT::new(Value::On)),
+        Function::Circuit(Circuit::new()),
     ];
 
     let applicable_functions: Vec<_> = functions.iter().filter(|function| function.input_value_count() <= simulator.circuit().all_values().len()).collect();
@@ -165,10 +166,15 @@ fn add_component(simulator: &mut Simulator) {
     let funtion_answer = Select::new("Which function should the new component be using?", applicable_functions).prompt();
 
     match funtion_answer {
-        Ok(&ref function_choice) => {
+        Ok(function_choice) => {
+            let function = match function_choice {
+                Function::Circuit(_) => Function::Circuit(load()),
+                _ => function_choice.clone(),
+            };
+
             let input_value_indices: Vec<_> = (0..simulator.circuit().all_values().len()).collect();
 
-            let valid_input_number = function_choice.input_value_count();
+            let valid_input_number = function.input_value_count();
             let validator = move |a: &[ListOption<&usize>]| {
                 if a.len() < valid_input_number {
                     Ok(Validation::Invalid("Too few input values selected.".into()))
@@ -185,8 +191,8 @@ fn add_component(simulator: &mut Simulator) {
 
             match input_answer {
                 Ok(input_choice) => {
-                    let (component_index, output_indices) = simulator.add_component(function_choice.clone(), input_choice.clone());
-                    println!("Component with index {component_index} using function {function_choice} on inputs {input_choice:?} with outputs {output_indices:?} has been added.")
+                    let (component_index, output_indices) = simulator.add_component(function.clone(), input_choice.clone());
+                    println!("Component with index {component_index} using function {function} on inputs {input_choice:?} with outputs {output_indices:?} has been added.")
                 },
                 Err(_) => simple_error(),
             }
