@@ -1,7 +1,7 @@
 use std::{process::exit, fs, io::Write};
 
 use inquire::{Select, MultiSelect, list_option::ListOption, validator::Validation, Text};
-use simulator::{function::Function, Value, Simulator, Circuit};
+use simulator::{function::{Function, FlipFlopD, FlipFlopJK, FlipFlopT}, Value, Simulator, Circuit};
 
 mod cli_util;
 
@@ -149,6 +149,10 @@ fn add_component(simulator: &mut Simulator) {
         Function::Not,
         Function::Nand,
         Function::Nor,
+        Function::FlipFlopRS(Value::On),
+        Function::FlipFlopJK(FlipFlopJK::new(Value::On)),
+        Function::FlipFlopD(FlipFlopD::new(Value::On)),
+        Function::FlipFlopT(FlipFlopT::new(Value::On)),
     ];
 
     let applicable_functions: Vec<_> = functions.iter().filter(|function| function.input_value_count() <= simulator.circuit().all_values().len()).collect();
