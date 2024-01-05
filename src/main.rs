@@ -1,7 +1,7 @@
 use std::{process::exit, fs, io::Write};
 
 use inquire::{Select, MultiSelect, list_option::ListOption, validator::Validation, Text};
-use simulator::{Function, Value, Simulator, Circuit};
+use simulator::{function::Function, Value, Simulator, Circuit};
 
 mod cli_util;
 
