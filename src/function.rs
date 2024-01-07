@@ -62,17 +62,16 @@ impl Function {
                 vec![value]
             },
             Function::Circuit(circuit) => {
+                let mut simulator = Simulator::new(circuit.clone());
+
                 for i in 0..input_values.len() {
-                    circuit.set_input(i, input_values[i]);
+                    simulator.set_input(i, input_values[i]);
                 }
 
-                let mut simulator = Simulator::new(circuit.clone());
                 simulator.simulate();
 
-                *circuit = simulator.circuit().clone();
-
                 circuit.all_outputs().iter()
-                    .map(|output| circuit.all_values()[output.value_index()])
+                    .map(|output| simulator.value_for_index(output.value_index()))
                     .collect()
             },
             Function::FlipFlopRS(state) => {
@@ -377,8 +376,8 @@ mod tests {
 
         pub(super) fn generate_and_circuit() -> Circuit {
             let mut circuit = Circuit::new();
-            let (_, value0_index) = circuit.add_input(Value::On);
-            let (_, value1_index) = circuit.add_input(Value::On);
+            let (_, value0_index) = circuit.add_input();
+            let (_, value1_index) = circuit.add_input();
             let (_, value2_index) = circuit.add_component(Function::And, vec![value0_index, value1_index]);
             let _ = circuit.add_output(value2_index[0]);
 

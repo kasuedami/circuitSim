@@ -110,27 +110,18 @@ fn add(simulator: &mut Simulator) {
 
 fn add_input(simulator: &mut Simulator) {
 
-    let options = &[Value::On, Value::Off];
-
-    let answer = Select::new("What should be the initial value of the new input?", options.to_vec()).prompt();
-
-    match answer {
-        Ok(choice) => {
-            let (input_index, value_index) = simulator.add_input(choice);
-            println!("New input with index {input_index} and initial value {choice} at value index {value_index} has been added.");
-        },
-        Err(_) => simple_error(),
-    }
+    let (input_index, value_index) = simulator.add_input();
+    println!("New input with index {input_index} with value index {value_index} has been added.");
 }
 
 fn add_output(simulator: &mut Simulator) {
 
-    if simulator.circuit().all_values().is_empty() {
+    if simulator.values().is_empty() {
         println!("The simulator has no values. Without a value no output can be added.");
         return;
     }
 
-    let options: Vec<_> = (0..simulator.circuit().all_values().len()).collect();
+    let options: Vec<_> = (0..simulator.values().len()).collect();
 
     let answer = Select::new("Which value should the new output read?", options).prompt();
 
@@ -158,7 +149,7 @@ fn add_component(simulator: &mut Simulator) {
         Function::Circuit(Circuit::new()),
     ];
 
-    let applicable_functions: Vec<_> = functions.iter().filter(|function| function.input_value_count() <= simulator.circuit().all_values().len()).collect();
+    let applicable_functions: Vec<_> = functions.iter().filter(|function| function.input_value_count() <= simulator.values().len()).collect();
 
     if applicable_functions.is_empty() {
         println!("There are no components that can be created because there are to few values that could be used as inputs.");
@@ -174,7 +165,7 @@ fn add_component(simulator: &mut Simulator) {
                 _ => function_choice.clone(),
             };
 
-            let input_value_indices: Vec<_> = (0..simulator.circuit().all_values().len()).collect();
+            let input_value_indices: Vec<_> = (0..simulator.values().len()).collect();
 
             let valid_input_number = function.input_value_count();
             let validator = move |a: &[ListOption<&usize>]| {
@@ -318,7 +309,7 @@ fn inspect(simulator: &mut Simulator) {
                         VALUE => {
                             println!("Inspecting all values:");
 
-                            simulator.circuit().all_values().iter().enumerate().for_each(|(i, input)| {
+                            simulator.values().iter().enumerate().for_each(|(i, input)| {
                                 println!("Index: {i}\n{input:?}");
                             });
                         },
@@ -333,7 +324,7 @@ fn inspect(simulator: &mut Simulator) {
                         INPUT => (0..simulator.circuit().all_inputs().len()).collect(),
                         OUTPUT => (0..simulator.circuit().all_outputs().len()).collect(),
                         COMPONENT => (0..simulator.circuit().all_components().len()).collect(),
-                        VALUE => (0..simulator.circuit().all_values().len()).collect(),
+                        VALUE => (0..simulator.values().len()).collect(),
                         _ => {
                             simple_error();
                             return;
@@ -357,7 +348,7 @@ fn inspect(simulator: &mut Simulator) {
                                 println!("Inspecting component at index {index_choice}:\n{choosen_input:?}");
                             },
                             VALUE => {
-                                let choosen_input = &simulator.circuit().all_values()[index_choice];
+                                let choosen_input = &simulator.values()[index_choice];
                                 println!("Inspecting value at index {index_choice}:\n{choosen_input:?}");
                             },
                             _ => {
