@@ -80,7 +80,7 @@ impl Function {
                 if is_positiv_transient(owned_values[1], input_values[1]) {
                     (vec![input_values[0], !input_values[0]], vec![input_values[0], input_values[1]])
                 } else {
-                    (vec![owned_values[0], !owned_values[1]], vec![owned_values[0], input_values[1]])
+                    (vec![owned_values[0], !owned_values[0]], vec![owned_values[0], input_values[1]])
                 }
             },
             Function::FlipFlopT => {
@@ -154,7 +154,7 @@ fn is_positiv_transient(old_value: Value, new_value: Value) -> bool {
 mod tests {
     use itertools::Itertools;
 
-    use self::util::{ClockState, tripple_input};
+    use self::util::{ClockState, tripple_input, dual_input};
 
     use super::*;
 
@@ -286,13 +286,12 @@ mod tests {
         let on_off =  &[Value::On,  Value::Off];
         let off_on =  &[Value::Off, Value::On];
         let on_on =   &[Value::On,  Value::On];
-        let off_off = &[Value::Off, Value::Off];
 
         let base = vec![Value::On, Value::On, Value::On, Value::Off, Value::Off, Value::Off];
-        let j_k_states: Vec<_> = base.iter().permutations(3).unique().collect();
+        let j_k_state_combinations: Vec<_> = base.iter().permutations(3).unique().collect();
 
         // in all these cases the output value should not change an thus be the same as the old state
-        for j_k_state in j_k_states {
+        for j_k_state in j_k_state_combinations {
             let j = *j_k_state[0];
             let k = *j_k_state[1];
             let state = *j_k_state[2];
@@ -313,6 +312,7 @@ mod tests {
             assert_eq!(owned_values, &[state, Value::Off]);
         }
 
+        // these are the cases where actual logic is happening
         let (input_values, owned_values) = tripple_input(Value::Off, Value::Off, Value::Off, ClockState::TransientToOn);
         let (output_values, owned_values) = jk.evaluate(&input_values, &owned_values);
         assert_eq!(output_values, off_on);
@@ -358,7 +358,54 @@ mod tests {
     fn flip_flop_d() {
         let d = Function::FlipFlopD;
 
-        // TODO: rewrite this
+        let on_off =  &[Value::On,  Value::Off];
+        let off_on =  &[Value::Off, Value::On];
+        let on_on =   &[Value::On,  Value::On];
+
+        let base = vec![Value::On, Value::On, Value::Off, Value::Off];
+        let d_state_combinations: Vec<_> = base.iter().permutations(2).unique().collect();
+
+        // in all these cases the output value should not change an thus be the same as the old state
+        for d_state in d_state_combinations {
+            let d_input = *d_state[0];
+            let state = *d_state[1];
+
+            let (input_values, owned_values) = dual_input(d_input, state, ClockState::StayOff);
+            let (output_values, owned_values) = d.evaluate(&input_values, &owned_values);
+            assert_eq!(output_values, &[state, !state]);
+            assert_eq!(owned_values, &[state, Value::Off]);
+
+            let (input_values, owned_values) = dual_input(d_input, state, ClockState::StayOn);
+            let (output_values, owned_values) = d.evaluate(&input_values, &owned_values);
+            assert_eq!(output_values, &[state, !state]);
+            assert_eq!(owned_values, &[state, Value::On]);
+
+            let (input_values, owned_values) = dual_input(d_input, state, ClockState::TransientToOff);
+            let (output_values, owned_values) = d.evaluate(&input_values, &owned_values);
+            assert_eq!(output_values, &[state, !state]);
+            assert_eq!(owned_values, &[state, Value::Off]);
+        }
+
+        // these are the cases where actual logic is happening
+        let (input_values, owned_values) = dual_input(Value::Off, Value::Off, ClockState::TransientToOn);
+        let (output_values, owned_values) = d.evaluate(&input_values, &owned_values);
+        assert_eq!(output_values, off_on);
+        assert_eq!(owned_values, off_on);
+
+        let (input_values, owned_values) = dual_input(Value::On, Value::Off, ClockState::TransientToOn);
+        let (output_values, owned_values) = d.evaluate(&input_values, &owned_values);
+        assert_eq!(output_values, on_off);
+        assert_eq!(owned_values, on_on);
+
+        let (input_values, owned_values) = dual_input(Value::Off, Value::On, ClockState::TransientToOn);
+        let (output_values, owned_values) = d.evaluate(&input_values, &owned_values);
+        assert_eq!(output_values, off_on);
+        assert_eq!(owned_values, off_on);
+
+        let (input_values, owned_values) = dual_input(Value::On, Value::On, ClockState::TransientToOn);
+        let (output_values, owned_values) = d.evaluate(&input_values, &owned_values);
+        assert_eq!(output_values, on_off);
+        assert_eq!(owned_values, on_on);
     }
 
     #[test]
