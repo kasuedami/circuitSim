@@ -1,0 +1,36 @@
+{
+  "inputs": [
+    {
+      "value_index": 0
+    },
+    {
+      "value_index": 1
+    }
+  ],
+  "outputs": [
+    {
+      "value_index": 2
+    },
+    {
+      "value_index": 3
+    }
+  ],
+  "components": [
+    {
+      "input_value_indices": [
+        0,
+        1
+      ],
+      "output_value_indices": [
+        2,
+        3
+      ],
+      "owned_value_indices": [
+        4,
+        5
+      ],
+      "function": "FlipFlopT"
+    }
+  ],
+  "value_list_len": 6
+}
