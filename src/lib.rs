@@ -16,7 +16,7 @@ pub struct Circuit {
     value_list_len: usize,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Value {
     On,
     Off,

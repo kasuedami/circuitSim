@@ -152,6 +152,8 @@ fn is_positiv_transient(old_value: Value, new_value: Value) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use itertools::Itertools;
+
     use self::util::{ClockState, tripple_input};
 
     use super::*;
@@ -286,22 +288,67 @@ mod tests {
         let on_on =   &[Value::On,  Value::On];
         let off_off = &[Value::Off, Value::Off];
 
-        let (input_values, owned_values) = tripple_input(Value::Off, Value::Off, Value::Off, ClockState::StayOff);
-        let (output_values, owned_values) = jk.evaluate(&input_values, &owned_values);
-        assert_eq!(output_values, off_on);
-        assert_eq!(owned_values, off_off);
+        let base = vec![Value::On, Value::On, Value::On, Value::Off, Value::Off, Value::Off];
+        let j_k_states: Vec<_> = base.iter().permutations(3).unique().collect();
 
-        let (input_values, owned_values) = tripple_input(Value::Off, Value::Off, Value::Off, ClockState::StayOn);
+        // in all these cases the output value should not change an thus be the same as the old state
+        for j_k_state in j_k_states {
+            let j = *j_k_state[0];
+            let k = *j_k_state[1];
+            let state = *j_k_state[2];
+
+            let (input_values, owned_values) = tripple_input(j, k, state, ClockState::StayOff);
+            let (output_values, owned_values) = jk.evaluate(&input_values, &owned_values);
+            assert_eq!(output_values, &[state, !state]);
+            assert_eq!(owned_values, &[state, Value::Off]);
+
+            let (input_values, owned_values) = tripple_input(j, k, state, ClockState::StayOn);
+            let (output_values, owned_values) = jk.evaluate(&input_values, &owned_values);
+            assert_eq!(output_values, &[state, !state]);
+            assert_eq!(owned_values, &[state, Value::On]);
+
+            let (input_values, owned_values) = tripple_input(j, k, state, ClockState::TransientToOff);
+            let (output_values, owned_values) = jk.evaluate(&input_values, &owned_values);
+            assert_eq!(output_values, &[state, !state]);
+            assert_eq!(owned_values, &[state, Value::Off]);
+        }
+
+        let (input_values, owned_values) = tripple_input(Value::Off, Value::Off, Value::Off, ClockState::TransientToOn);
         let (output_values, owned_values) = jk.evaluate(&input_values, &owned_values);
         assert_eq!(output_values, off_on);
         assert_eq!(owned_values, off_on);
 
-        let (input_values, owned_values) = tripple_input(Value::Off, Value::Off, Value::Off, ClockState::TransientToOff);
+        let (input_values, owned_values) = tripple_input(Value::On, Value::Off, Value::Off, ClockState::TransientToOn);
+        let (output_values, owned_values) = jk.evaluate(&input_values, &owned_values);
+        assert_eq!(output_values, on_off);
+        assert_eq!(owned_values, on_on);
+
+        let (input_values, owned_values) = tripple_input(Value::Off, Value::On, Value::Off, ClockState::TransientToOn);
         let (output_values, owned_values) = jk.evaluate(&input_values, &owned_values);
         assert_eq!(output_values, off_on);
-        assert_eq!(owned_values, off_off);
+        assert_eq!(owned_values, off_on);
 
-        let (input_values, owned_values) = tripple_input(Value::Off, Value::Off, Value::Off, ClockState::TransientToOn);
+        let (input_values, owned_values) = tripple_input(Value::Off, Value::Off, Value::On, ClockState::TransientToOn);
+        let (output_values, owned_values) = jk.evaluate(&input_values, &owned_values);
+        assert_eq!(output_values, on_off);
+        assert_eq!(owned_values, on_on);
+
+        let (input_values, owned_values) = tripple_input(Value::On, Value::On, Value::Off, ClockState::TransientToOn);
+        let (output_values, owned_values) = jk.evaluate(&input_values, &owned_values);
+        assert_eq!(output_values, on_off);
+        assert_eq!(owned_values, on_on);
+
+        let (input_values, owned_values) = tripple_input(Value::On, Value::Off, Value::On, ClockState::TransientToOn);
+        let (output_values, owned_values) = jk.evaluate(&input_values, &owned_values);
+        assert_eq!(output_values, on_off);
+        assert_eq!(owned_values, on_on);
+
+        let (input_values, owned_values) = tripple_input(Value::Off, Value::On, Value::On, ClockState::TransientToOn);
+        let (output_values, owned_values) = jk.evaluate(&input_values, &owned_values);
+        assert_eq!(output_values, off_on);
+        assert_eq!(owned_values, off_on);
+
+        let (input_values, owned_values) = tripple_input(Value::On, Value::On, Value::On, ClockState::TransientToOn);
         let (output_values, owned_values) = jk.evaluate(&input_values, &owned_values);
         assert_eq!(output_values, off_on);
         assert_eq!(owned_values, off_on);
