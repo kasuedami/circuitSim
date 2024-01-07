@@ -77,7 +77,7 @@ impl Simulator {
             let components_to_update = self.find_components_by_input(value_to_check);
 
             for component_index in components_to_update {
-                let component = self.circuit.component_mut(component_index);
+                let component = self.circuit.component(component_index);
                 let input_values: Vec<Value> = component.input_value_indices().iter()
                     .map(|&value_index| self.values[value_index])
                     .collect();
@@ -85,7 +85,18 @@ impl Simulator {
                     .map(|&value_index| self.values[value_index])
                     .collect();
 
-                let new_output_values = component.function_mut().evaluate(&input_values);
+                let owned_values = if component.function().output_value_count() != 0 {
+                    component.owned_value_indices().iter().map(|&value_index| self.values[value_index]).collect()
+                } else {
+                    vec![]
+                };
+
+                let (new_output_values, new_owned_values) = component.function().evaluate(&input_values, &owned_values);
+
+                for i in 0..component.owned_value_indices().len() {
+                    let value_index = component.owned_value_indices()[i];
+                    self.values[value_index] = new_owned_values[i];
+                }
 
                 let value_changes = old_output_values.iter().zip(new_output_values.iter())
                     .enumerate()

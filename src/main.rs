@@ -1,7 +1,7 @@
 use std::{process::exit, fs, io::Write};
 
 use inquire::{Select, MultiSelect, list_option::ListOption, validator::Validation, Text};
-use simulator::{function::{Function, FlipFlopD, FlipFlopJK, FlipFlopT}, Value, simulator::Simulator, Circuit};
+use simulator::{function::Function, Value, simulator::Simulator, Circuit};
 
 mod cli_util;
 
@@ -142,10 +142,10 @@ fn add_component(simulator: &mut Simulator) {
         Function::Not,
         Function::Nand,
         Function::Nor,
-        Function::FlipFlopRS(Value::On),
-        Function::FlipFlopJK(FlipFlopJK::new(Value::On)),
-        Function::FlipFlopD(FlipFlopD::new(Value::On)),
-        Function::FlipFlopT(FlipFlopT::new(Value::On)),
+        Function::FlipFlopRS,
+        Function::FlipFlopJK,
+        Function::FlipFlopD,
+        Function::FlipFlopT,
         Function::Circuit(Circuit::new()),
     ];
 

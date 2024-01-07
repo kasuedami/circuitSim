@@ -52,10 +52,13 @@ impl Circuit {
     pub fn add_component(&mut self, function: Function, input_value_indices: Vec<usize>) -> (usize, Vec<usize>) {
         let output_value_start_index = self.value_list_len;
         self.value_list_len += function.output_value_count();
-
         let output_value_indices: Vec<usize> = (output_value_start_index..self.value_list_len).collect();
 
-        let component = Component::new(function, input_value_indices, output_value_indices.clone());
+        let owned_value_start_index = self.value_list_len;
+        self.value_list_len += function.owned_value_count();
+        let owned_value_indices: Vec<usize> = (owned_value_start_index..self.value_list_len).collect();
+
+        let component = Component::new(function, input_value_indices, output_value_indices.clone(), owned_value_indices);
         self.components.push(component);
         let component_index = self.components.len() - 1;
 
@@ -72,10 +75,6 @@ impl Circuit {
 
     pub fn component(&self, component_index: usize) -> &Component {
         &self.components[component_index]
-    }
-
-    pub(crate) fn component_mut(&mut self, component_index: usize) -> &mut Component {
-        &mut self.components[component_index]
     }
 
     pub fn all_inputs(&self) -> &[Input] {

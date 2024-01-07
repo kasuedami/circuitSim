@@ -17,6 +17,7 @@ pub struct Output {
 pub struct Component {
     input_value_indices: Vec<usize>,
     output_value_indices: Vec<usize>,
+    owned_value_indices: Vec<usize>,
     function: Function,
 }
 
@@ -41,11 +42,12 @@ impl Output {
 }
 
 impl Component {
-    pub fn new(function: Function, input_value_indices: Vec<usize>, output_value_indices: Vec<usize>) -> Self {
+    pub fn new(function: Function, input_value_indices: Vec<usize>, output_value_indices: Vec<usize>, owned_value_indices: Vec<usize>) -> Self {
         Self {
             input_value_indices,
             output_value_indices,
-            function
+            owned_value_indices,
+            function,
         }
     }
 
@@ -57,11 +59,11 @@ impl Component {
         &self.output_value_indices
     }
 
-    pub fn function(&self) -> &Function {
-        &self.function
+    pub fn owned_value_indices(&self) -> &[usize] {
+        &self.owned_value_indices
     }
 
-    pub(super) fn function_mut(&mut self) -> &mut Function {
-        &mut self.function
+    pub fn function(&self) -> &Function {
+        &self.function
     }
 }
