@@ -72,7 +72,7 @@ impl Function {
                 *circuit = simulator.circuit;
 
                 circuit.all_outputs().iter()
-                    .map(|output| circuit.all_values()[output.value_index])
+                    .map(|output| circuit.all_values()[output.value_index()])
                     .collect()
             },
             Function::FlipFlopRS(state) => {
