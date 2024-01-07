@@ -21,6 +21,7 @@
       "output_value_indices": [
         2
       ],
+      "owned_value_indices": [],
       "function": {
         "Circuit": {
           "inputs": [
@@ -45,21 +46,14 @@
               "output_value_indices": [
                 2
               ],
+              "owned_value_indices": [],
               "function": "And"
             }
           ],
-          "values": [
-            "On",
-            "On",
-            "Off"
-          ]
+          "value_list_len": 3
         }
       }
     }
   ],
-  "values": [
-    "On",
-    "On",
-    "Off"
-  ]
+  "value_list_len": 3
 }

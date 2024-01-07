@@ -21,12 +21,9 @@
       "output_value_indices": [
         2
       ],
+      "owned_value_indices": [],
       "function": "And"
     }
   ],
-  "values": [
-    "On",
-    "On",
-    "Off"
-  ]
+  "value_list_len": 3
 }
