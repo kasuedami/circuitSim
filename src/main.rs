@@ -57,6 +57,7 @@ fn menu(simulator: &mut Simulator) -> bool {
         "Interact",
         "Inspect",
         "Save",
+        "New",
         "Exit",
     ];
 
@@ -72,6 +73,7 @@ fn menu(simulator: &mut Simulator) -> bool {
         "Interact" => interact(simulator),
         "Inspect" => inspect(simulator),
         "Save" => save(simulator),
+        "New" => *simulator = Simulator::new(),
         "Exit" => {
             println!("Exiting...");
             return false;
@@ -381,7 +383,7 @@ fn inspect(simulator: &mut Simulator) {
 }
 
 fn save(simulator: &mut Simulator) {
-    if let Ok(serialized_circuit) = serde_json::to_string(simulator.circuit()) {
+    if let Ok(serialized_circuit) = serde_json::to_string_pretty(simulator.circuit()) {
 
         let current_dir = std::env::current_dir().unwrap();
         let help_message = format!("Current directory: {}", current_dir.to_string_lossy());
