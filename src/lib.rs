@@ -14,6 +14,7 @@ pub struct Circuit {
     outputs: Vec<Output>,
     components: Vec<Component>,
     value_list_len: usize,
+    owned_value_list_len: usize,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -29,6 +30,7 @@ impl Circuit {
             outputs: Vec::new(),
             components: Vec::new(),
             value_list_len: 0,
+            owned_value_list_len: 0,
         }
     }
 
@@ -54,9 +56,9 @@ impl Circuit {
         self.value_list_len += function.output_value_count();
         let output_value_indices: Vec<usize> = (output_value_start_index..self.value_list_len).collect();
 
-        let owned_value_start_index = self.value_list_len;
-        self.value_list_len += function.owned_value_count();
-        let owned_value_indices: Vec<usize> = (owned_value_start_index..self.value_list_len).collect();
+        let owned_value_start_index = self.owned_value_list_len;
+        self.owned_value_list_len += function.owned_value_count();
+        let owned_value_indices: Vec<usize> = (owned_value_start_index..self.owned_value_list_len).collect();
 
         let component = Component::new(function, input_value_indices, output_value_indices.clone(), owned_value_indices);
         self.components.push(component);
@@ -91,6 +93,10 @@ impl Circuit {
 
     pub fn value_list_len(&self) -> usize {
         self.value_list_len
+    }
+
+    pub(crate) fn owned_value_list_len(&self) -> usize {
+        self.owned_value_list_len
     }
 }
 

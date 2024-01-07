@@ -5,6 +5,7 @@ use crate::{Value, Circuit, function::Function, element::Output};
 pub struct Simulator {
     circuit: Circuit,
     values: Vec<Value>,
+    owned_values: Vec<Value>,
     changed_values: VecDeque<usize>,
     steps_until_unstable: NonZeroUsize,
 }
@@ -12,11 +13,15 @@ pub struct Simulator {
 
 impl Simulator {
     pub fn new(circuit: Circuit) -> Self {
-        let all_value_indices: VecDeque<usize> = (0..circuit.value_list_len()).collect();
+        let value_list_len = circuit.value_list_len();
+        let owned_value_list_len = circuit.owned_value_list_len();
+        let all_value_indices: VecDeque<usize> = (0..value_list_len).collect();
+
 
         Self {
             circuit: circuit,
-            values: vec![Value::Off; all_value_indices.len()],
+            values: vec![Value::Off; value_list_len],
+            owned_values: vec![Value::Off; owned_value_list_len],
             changed_values: all_value_indices,
             steps_until_unstable: NonZeroUsize::new(1000).unwrap(),
         }
@@ -63,6 +68,10 @@ impl Simulator {
             self.values.push(Value::Off);
         }
 
+        while self.owned_values.len() < self.circuit.owned_value_list_len {
+            self.owned_values.push(Value::Off);
+        }
+
         (component_index, output_value_indices)
     }
 
@@ -96,7 +105,7 @@ impl Simulator {
                     .collect();
 
                 let owned_values = if component.function().output_value_count() != 0 {
-                    component.owned_value_indices().iter().map(|&value_index| self.values[value_index]).collect()
+                    component.owned_value_indices().iter().map(|&value_index| self.owned_values[value_index]).collect()
                 } else {
                     vec![]
                 };
@@ -105,7 +114,7 @@ impl Simulator {
 
                 for i in 0..component.owned_value_indices().len() {
                     let value_index = component.owned_value_indices()[i];
-                    self.values[value_index] = new_owned_values[i];
+                    self.owned_values[value_index] = new_owned_values[i];
                 }
 
                 let value_changes = old_output_values.iter().zip(new_output_values.iter())
