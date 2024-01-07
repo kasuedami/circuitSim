@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use serde::{Serialize, Deserialize};
 
-use crate::{Value, Circuit, Simulator};
+use crate::{Value, Circuit, simulator::Simulator};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Function {
@@ -66,10 +66,10 @@ impl Function {
                     circuit.set_input(i, input_values[i]);
                 }
 
-                let mut simulator = Simulator::from_circuit(circuit.clone());
+                let mut simulator = Simulator::new(circuit.clone());
                 simulator.simulate();
 
-                *circuit = simulator.circuit;
+                *circuit = simulator.circuit().clone();
 
                 circuit.all_outputs().iter()
                     .map(|output| circuit.all_values()[output.value_index()])

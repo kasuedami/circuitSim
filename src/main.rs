@@ -1,7 +1,7 @@
 use std::{process::exit, fs, io::Write};
 
 use inquire::{Select, MultiSelect, list_option::ListOption, validator::Validation, Text};
-use simulator::{function::{Function, FlipFlopD, FlipFlopJK, FlipFlopT}, Value, Simulator, Circuit};
+use simulator::{function::{Function, FlipFlopD, FlipFlopJK, FlipFlopT}, Value, simulator::Simulator, Circuit};
 
 mod cli_util;
 
@@ -35,11 +35,11 @@ fn initialize() -> Simulator {
             match choice {
                 "New" => {
                     println!("Creating new empty simulator simulation!");
-                    Simulator::new()
+                    Simulator::new(Circuit::new())
                 },
                 "Load" => {
                     let loaded_circuit = load();
-                    Simulator::from_circuit(loaded_circuit)
+                    Simulator::new(loaded_circuit)
                 },
                 _ => simple_error_exiting(),
             }
@@ -73,7 +73,7 @@ fn menu(simulator: &mut Simulator) -> bool {
         "Interact" => interact(simulator),
         "Inspect" => inspect(simulator),
         "Save" => save(simulator),
-        "New" => *simulator = Simulator::new(),
+        "New" => *simulator = Simulator::new(Circuit::new()),
         "Exit" => {
             println!("Exiting...");
             return false;
