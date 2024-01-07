@@ -73,7 +73,7 @@ impl Function {
 
                     (vec![value, !value], vec![value, input_values[2]])
                 } else {
-                    (vec![owned_values[0], !owned_values[1]], vec![owned_values[0], input_values[2]])
+                    (vec![owned_values[0], !owned_values[0]], vec![owned_values[0], input_values[2]])
                 }
             },
             Function::FlipFlopD => {
@@ -152,6 +152,8 @@ fn is_positiv_transient(old_value: Value, new_value: Value) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use self::util::{ClockState, tripple_input};
+
     use super::*;
 
     #[test]
@@ -234,14 +236,75 @@ mod tests {
     fn flip_flop_rs() {
         let rs = Function::FlipFlopRS;
 
-        // TODO: rewrite this
+        let on_off =  &[Value::On,  Value::Off];
+        let off_on =  &[Value::Off, Value::On];
+        let on_on =   &[Value::On,  Value::On];
+        let off_off = &[Value::Off, Value::Off];
+
+        let on = &[Value::On];
+        let off = &[Value::Off];
+
+        let (output_values, owned_values) = rs.evaluate(off_off, off);
+        assert_eq!(output_values, off_on);
+        assert_eq!(owned_values, off);
+
+        let (output_values, owned_values) = rs.evaluate(off_off, on);
+        assert_eq!(output_values, on_off);
+        assert_eq!(owned_values, on);
+
+        let (output_values, owned_values) = rs.evaluate(off_on, off);
+        assert_eq!(output_values, off_on);
+        assert_eq!(owned_values, off);
+
+        let (output_values, owned_values) = rs.evaluate(off_on, on);
+        assert_eq!(output_values, off_on);
+        assert_eq!(owned_values, off);
+
+        let (output_values, owned_values) = rs.evaluate(on_off, off);
+        assert_eq!(output_values, on_off);
+        assert_eq!(owned_values, on);
+
+        let (output_values, owned_values) = rs.evaluate(on_off, on);
+        assert_eq!(output_values, on_off);
+        assert_eq!(owned_values, on);
+
+        let (output_values, owned_values) = rs.evaluate(on_on, off);
+        assert_eq!(output_values, off_off);
+        assert_eq!(owned_values, off);
+
+        let (output_values, owned_values) = rs.evaluate(on_on, on);
+        assert_eq!(output_values, off_off);
+        assert_eq!(owned_values, on);
     }
 
     #[test]
     fn flip_flop_jk() {
         let jk = Function::FlipFlopJK;
 
-        // TODO: rewrite this
+        let on_off =  &[Value::On,  Value::Off];
+        let off_on =  &[Value::Off, Value::On];
+        let on_on =   &[Value::On,  Value::On];
+        let off_off = &[Value::Off, Value::Off];
+
+        let (input_values, owned_values) = tripple_input(Value::Off, Value::Off, Value::Off, ClockState::StayOff);
+        let (output_values, owned_values) = jk.evaluate(&input_values, &owned_values);
+        assert_eq!(output_values, off_on);
+        assert_eq!(owned_values, off_off);
+
+        let (input_values, owned_values) = tripple_input(Value::Off, Value::Off, Value::Off, ClockState::StayOn);
+        let (output_values, owned_values) = jk.evaluate(&input_values, &owned_values);
+        assert_eq!(output_values, off_on);
+        assert_eq!(owned_values, off_on);
+
+        let (input_values, owned_values) = tripple_input(Value::Off, Value::Off, Value::Off, ClockState::TransientToOff);
+        let (output_values, owned_values) = jk.evaluate(&input_values, &owned_values);
+        assert_eq!(output_values, off_on);
+        assert_eq!(owned_values, off_off);
+
+        let (input_values, owned_values) = tripple_input(Value::Off, Value::Off, Value::Off, ClockState::TransientToOn);
+        let (output_values, owned_values) = jk.evaluate(&input_values, &owned_values);
+        assert_eq!(output_values, off_on);
+        assert_eq!(owned_values, off_on);
     }
 
     #[test]
@@ -269,6 +332,49 @@ mod tests {
             let _ = circuit.add_output(value2_index[0]);
 
             circuit
+        }
+
+        pub(super) enum ClockState {
+            StayOff,
+            StayOn,
+            TransientToOn,
+            TransientToOff,
+        }
+
+        pub(super) fn dual_input(i: Value, state: Value, clock: ClockState) -> (Vec<Value>, Vec<Value>) {
+            let input_values = vec![i, match clock {
+                ClockState::StayOff => Value::Off,
+                ClockState::StayOn => Value::On,
+                ClockState::TransientToOn => Value::On,
+                ClockState::TransientToOff => Value::Off,
+            }];
+
+            let owned_value = vec![state, match clock {
+                ClockState::StayOff => Value::Off,
+                ClockState::StayOn => Value::On,
+                ClockState::TransientToOn => Value::Off,
+                ClockState::TransientToOff => Value::On,
+            }];
+
+            (input_values, owned_value)
+        }
+
+        pub(super) fn tripple_input(j: Value, k: Value, state: Value, clock: ClockState) -> (Vec<Value>, Vec<Value>) {
+            let input_values = vec![j, k, match clock {
+                ClockState::StayOff => Value::Off,
+                ClockState::StayOn => Value::On,
+                ClockState::TransientToOn => Value::On,
+                ClockState::TransientToOff => Value::Off,
+            }];
+
+            let owned_value = vec![state, match clock {
+                ClockState::StayOff => Value::Off,
+                ClockState::StayOn => Value::On,
+                ClockState::TransientToOn => Value::Off,
+                ClockState::TransientToOff => Value::On,
+            }];
+
+            (input_values, owned_value)
         }
     }
 }
