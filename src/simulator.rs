@@ -45,6 +45,10 @@ impl Simulator {
         let (input_index, value_index) = self.circuit.add_input();
         self.changed_values.push_back(value_index);
 
+        while self.values.len() < self.circuit.value_list_len {
+            self.values.push(Value::Off);
+        }
+
         (input_index, value_index)
     }
 
@@ -53,7 +57,13 @@ impl Simulator {
     }
 
     pub fn add_component(&mut self, function: Function, input_value_indices: Vec<usize>) -> (usize, Vec<usize>) {
-        self.circuit.add_component(function, input_value_indices)
+        let (component_index, output_value_indices) = self.circuit.add_component(function, input_value_indices);
+
+        while self.values.len() < self.circuit.value_list_len {
+            self.values.push(Value::Off);
+        }
+
+        (component_index, output_value_indices)
     }
 
     pub fn circuit(&self) -> &Circuit {
