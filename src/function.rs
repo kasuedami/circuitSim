@@ -8,9 +8,11 @@ use crate::{Value, Circuit, simulator::Simulator};
 pub enum Function {
     And,
     Or,
+    Xor,
     Not,
     Nand,
     Nor,
+    Xnor,
     Circuit(Circuit),
     FlipFlopRS,
     FlipFlopJK,
@@ -29,6 +31,10 @@ impl Function {
                 let value = input_values.iter().fold(Value::Off, |acc, &x| acc | x);
                 (vec![value], vec![])
             },
+            Function::Xor => {
+                let value = input_values.iter().fold(Value::Off, |acc, &x| acc ^ x);
+                (vec![value], vec![])
+            },
             Function::Not => (vec![!input_values[0]], vec![]),
             Function::Nand => {
                 let value = !input_values.iter().fold(Value::On, |acc, &x| acc & x);
@@ -36,6 +42,10 @@ impl Function {
             },
             Function::Nor => {
                 let value = !input_values.iter().fold(Value::Off, |acc, &x| acc | x);
+                (vec![value], vec![])
+            },
+            Function::Xnor => {
+                let value = !input_values.iter().fold(Value::Off, |acc, &x| acc ^ x);
                 (vec![value], vec![])
             },
             Function::Circuit(circuit) => {
@@ -97,9 +107,11 @@ impl Function {
         match self {
             Function::And => 2,
             Function::Or => 2,
+            Function::Xor => 2,
             Function::Not => 1,
             Function::Nand => 2,
             Function::Nor => 2,
+            Function::Xnor => 2,
             Function::Circuit(circuit) => circuit.all_inputs().len(),
             Function::FlipFlopRS => 2,
             Function::FlipFlopJK => 3,
@@ -112,9 +124,11 @@ impl Function {
         match self {
             Function::And => 1,
             Function::Or => 1,
+            Function::Xor => 1,
             Function::Not => 1,
             Function::Nand => 1,
             Function::Nor => 1,
+            Function::Xnor => 1,
             Function::Circuit(circuit) => circuit.all_outputs().len(),
             Function::FlipFlopRS => 2,
             Function::FlipFlopJK => 2,
@@ -127,9 +141,11 @@ impl Function {
         match self {
             Function::And => 0,
             Function::Or => 0,
+            Function::Xor => 0,
             Function::Not => 0,
             Function::Nand => 0,
             Function::Nor => 0,
+            Function::Xnor => 0,
             Function::Circuit(_) => 0,
             Function::FlipFlopRS => 1,
             Function::FlipFlopJK => 2,
@@ -185,6 +201,19 @@ mod tests {
     }
 
     #[test]
+    fn xor() {
+        let xor = Function::Xor;
+
+        // cases where result should be Value::On
+        assert_eq!(xor.evaluate(&[Value::On,  Value::Off], &[]), (vec![Value::On], vec![]));
+        assert_eq!(xor.evaluate(&[Value::Off, Value::On],  &[]), (vec![Value::On], vec![]));
+
+        // cases where result should be Value::Off
+        assert_eq!(xor.evaluate(&[Value::On,  Value::On],  &[]), (vec![Value::Off], vec![]));
+        assert_eq!(xor.evaluate(&[Value::Off, Value::Off], &[]), (vec![Value::Off], vec![]));
+    }
+
+    #[test]
     fn not() {
         let not = Function::Not;
 
@@ -219,6 +248,19 @@ mod tests {
         assert_eq!(nor.evaluate(&[Value::On,  Value::On],  &[]), (vec![Value::Off], vec![]));
         assert_eq!(nor.evaluate(&[Value::On,  Value::Off], &[]), (vec![Value::Off], vec![]));
         assert_eq!(nor.evaluate(&[Value::Off, Value::On],  &[]), (vec![Value::Off], vec![]));
+    }
+
+    #[test]
+    fn xnor() {
+        let xnor = Function::Xnor;
+
+        // cases where result should be Value::On
+        assert_eq!(xnor.evaluate(&[Value::On,  Value::On],  &[]), (vec![Value::On], vec![]));
+        assert_eq!(xnor.evaluate(&[Value::Off, Value::Off], &[]), (vec![Value::On], vec![]));
+
+        // cases where result should be Value::Off
+        assert_eq!(xnor.evaluate(&[Value::On,  Value::Off], &[]), (vec![Value::Off], vec![]));
+        assert_eq!(xnor.evaluate(&[Value::Off, Value::On],  &[]), (vec![Value::Off], vec![]));
     }
 
     #[test]

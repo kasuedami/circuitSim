@@ -1,4 +1,4 @@
-use std::{ops::{BitAnd, BitOr, Not}, fmt::Display};
+use std::{ops::{BitAnd, BitOr, Not, BitXor}, fmt::Display};
 
 use element::{Input, Output, Component};
 use function::Function;
@@ -118,6 +118,18 @@ impl BitOr for Value {
         match (self, rhs) {
             (Value::Off, Value::Off) => Value::Off,
             _ => Value::On,
+        }
+    }
+}
+
+impl BitXor for Value {
+    type Output = Self;
+
+    fn bitxor(self, rhs: Self) -> Self::Output {
+        match (self, rhs) {
+            (Value::On, Value::Off) => Value::On,
+            (Value::Off, Value::On) => Value::On,
+            _ => Value::Off,
         }
     }
 }
